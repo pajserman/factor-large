@@ -1,12 +1,100 @@
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter; // Import the FileWriter class
 import java.io.IOException; // Import the IOException class to handle errors
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class WriteToFile {
+
+    public static void main(String[] args) {
+        int[] a = readNumbersFromFile("primes.txt", 100);
+        for (int i : a) {
+            System.out.println(i);
+        }
+    }
+
+    public static int[] readNumbersFromFile(String filePath, int numValues) {
+        ArrayList<Integer> numbersList = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            int count = 0;
+
+            // Read line by line
+            while ((line = reader.readLine()) != null && count < numValues) {
+                // Split each line by spaces
+                String[] numberStrings = line.trim().split("\\s+");
+
+                // Process each number in the line
+                for (String numberStr : numberStrings) {
+                    if (count < numValues) { // Stop if we've reached the specified number of values
+                        numbersList.add(Integer.parseInt(numberStr));
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NumberFormatException e) {
+            System.out.println("File contains non-integer values.");
+            e.printStackTrace();
+        }
+
+        // Convert ArrayList to int array
+        int[] numbers = new int[numbersList.size()];
+        for (int i = 0; i < numbersList.size(); i++) {
+            numbers[i] = numbersList.get(i);
+        }
+
+        return numbers;
+    }
+
+    public static int[] getPrimes(int amount) {
+        try {
+            File myObj = new File("primes.txt");
+            Scanner myReader = new Scanner(myObj);
+            ArrayList<Integer> list = new ArrayList<>();
+            int count = 0;
+            while (myReader.hasNextLine()) {
+                String data = myReader.nextLine();
+                String[] parts = data.split(" ");
+                for (int i = 0; i < parts.length; i++) {
+                    list.add(Integer.parseInt(parts[i]));
+                    count++;
+                }
+                if (count >= amount)
+                    myReader.close();
+                break;
+            }
+
+            myReader.close();
+
+            int[] intArray = new int[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                intArray[i] = list.get(i);
+            }
+
+            for (int num : intArray) {
+                System.out.print(num + " ");
+            }
+
+            return intArray;
+        } catch (FileNotFoundException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+            return new int[1];
+        }
+    }
 
     public static void writeMatrix(int[][] M) {
         try {
@@ -23,31 +111,6 @@ public class WriteToFile {
         } catch (IOException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();
-        }
-    }
-
-    public static ArrayList<Integer> getPrimes(double amount) {
-        try {
-            File myObj = new File("primes.txt");
-            Scanner myReader = new Scanner(myObj);
-            ArrayList<Integer> list = new ArrayList<>();
-            double count = 0;
-            while (myReader.hasNextLine()) {
-                String data = myReader.nextLine();
-                String[] parts = data.split(" ");
-                for (int i = 0; i < parts.length; i++) {
-                    list.add(Integer.parseInt(parts[i]));
-                    count++;
-                }
-                if (count >= amount)
-                    break;
-            }
-            myReader.close();
-            return list;
-        } catch (FileNotFoundException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-            return new ArrayList<Integer>();
         }
     }
 
@@ -74,6 +137,23 @@ public class WriteToFile {
             System.out.println("An error occurred.");
             e.printStackTrace();
             return new int[3][3];
+        }
+    }
+
+    public static void removeNewlinesFromFile(String filePath) {
+        try {
+            // Read the file content as a single string
+            String content = Files.readString(Path.of(filePath));
+
+            // Remove all newline characters
+            content = content.replace("\n", "");
+
+            // Write the modified content back to the file
+            Files.writeString(Path.of(filePath), content, StandardOpenOption.TRUNCATE_EXISTING);
+
+            System.out.println("Newline characters removed successfully.");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

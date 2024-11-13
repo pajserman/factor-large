@@ -3,67 +3,83 @@ import java.util.Arrays;
 import java.util.List;
 
 public class App {
-    private final static int[] factorBase = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 };
+    private final static int[] factorBase = WriteToFile.readNumbersFromFile("primes.txt", 10);
     private final static BigInteger[] FACTOR_BASE = new BigInteger[factorBase.length];
-    private final static String N_IN = "392742364277";
+    private final static String N_IN = "16637";
+    // private final static String N_IN = "392742364277";
+    // private final static String N_IN = "130314078057199508079913";
     private final static BigInteger N = new BigInteger(N_IN);
-    private final static int L = 1024 + 10;
+    private final static int L = factorBase.length + 2;
     private static int[] rs = new int[L];
 
     public static void main(String[] args) throws Exception {
-        // saving N as bigInt
-
         // preparing factor base
         for (int i = 0; i < factorBase.length; i++) {
             FACTOR_BASE[i] = BigInteger.valueOf(factorBase[i]);
         }
+        boolean run = true;
+        while (run) {
+            // generating smooth numbers, P and M matrix, storing r values in rs
+            List<int[][]> PM = Pmatrix(true);
 
-        // generating smooth numbers, P and M matrix, storing r values in rs
-        List<int[][]> PM = Pmatrix(false);
+            // printMatrix(PM.get(0));
+            // System.out.println("---------");
+            // printMatrix(PM.get(1));
 
-        // printMatrix(PM.get(0));
-        // System.out.println("---------");
-        // printMatrix(PM.get(1));
+            int[][] P = PM.get(0);
 
-        int[][] P = PM.get(0);
+            WriteToFile.writeMatrix(PM.get(1));
 
-        WriteToFile.writeMatrix(PM.get(1));
+            ProcessBuilder processBuilder = new ProcessBuilder("GaussBin.exe", "in.txt", "out.txt");
+            Process process = processBuilder.start();
 
-        Runtime.getRuntime().exec(".\\GaussBin.exe .\\in.txt .\\out.txt");
+            // Wait for the process to finish
+            int exitCode = process.waitFor();
 
-        // for every solution multuply rows and try founding p and q
-        int[][] solutions = WriteToFile.getData();
+            // for every solution multuply rows and try founding p and q
+            int[][] solutions = WriteToFile.getData();
 
-        for (int s = 0; s < solutions.length; s++) {
-            BigInteger x = BigInteger.ONE;
-            BigInteger y = BigInteger.ONE;
-            for (int i = 0; i < solutions[s].length; i++) {
-                if (solutions[s][i] == 1) {
-                    x = x.multiply(BigInteger.valueOf((long) rs[i]));
+            for (int s = 0; s < solutions.length; s++) {
+                BigInteger x = BigInteger.ONE;
+                BigInteger y = BigInteger.ONE;
+                int[] factors = new int[factorBase.length];
+                for (int i = 0; i < solutions[s].length; i++) {
+                    if (solutions[s][i] == 1) {
+                        // multiplying rows (x)
+                        x = x.multiply(BigInteger.valueOf((long) rs[i]));
 
-                    for (int j = 0; j < P[i].length; j++) {
-                        if (P[i][j] > 0) {
-                            y = y.multiply(FACTOR_BASE[j].pow(P[i][j]));
-                            // System.out.println(FACTOR_BASE[j].pow(P[i][j]));
-                            // System.out.println(P[i][j]);
+                        // getting rows to multiply (y)
+                        for (int j = 0; j < factorBase.length; j++) {
+                            if (P[i][j] > 0) {
+                                factors[j] += P[i][j];
+                            }
                         }
+
+                    }
+
+                }
+                // flyttar ut tvån genom att ta index minux 2 samtidigt multiplerar jag ihop y
+                for (int i = 0; i < factors.length; i++) {
+                    if (factors[i] > 0) {
+                        factors[i] /= 2;
+                        y = y.multiply(FACTOR_BASE[i].pow(factors[i])).mod(N);
                     }
                 }
+
+                x = x.mod(N);
+                System.out.println("Trying solution: " + (s + 1));
+                System.out.println(x.toString() + " = " + y.toString());
+                BigInteger a = y.subtract(x);
+                BigInteger p = a.gcd(N);
+                Boolean notAnswer = p.equals(BigInteger.ONE) || p.equals(N);
+                if (!notAnswer) {
+                    System.out.println(p);
+                    System.out.println(N.divide(p));
+                    run = false;
+                    break;
+                }
+
             }
-            x = x.mod(N);
-            y = y.mod(N).sqrt();
-            // System.out.println(x.toString() + " = " + y.toString());
-
-            BigInteger a = y.subtract(x);
-            BigInteger p = a.gcd(N);
-            Boolean notAnswer = p.equals(BigInteger.ONE) || p.equals(N);
-            if (!notAnswer) {
-                System.out.println(p);
-                System.out.println(N.divide(p));
-                break;
-
-            }
-
         }
 
     }
@@ -80,13 +96,15 @@ public class App {
     static List<int[][]> Pmatrix(boolean print) {
         int[][] P = new int[L][factorBase.length];
         int[][] M = new int[L][factorBase.length];
+
         int count = 0;
-        for (int i = 3; i < 10; i++) {
-            for (int j = 2; j < 100; j++) {
+        for (int i = 1; i < L * 2; i++) {
+            for (int j = 1; j < L * 2; j++) {
                 if (count == L) {
-                    break;
+                    System.out.println("Found Enough");
+                    return Arrays.asList(P, M);
                 }
-                BigInteger r = likelySmooth(i, j);
+                BigInteger r = likelySmooth(random(1, L), random(1, L));
                 int[] primes = primeFactorsAndSmooth(r.pow(2).mod(N));
                 if (primes[0] != -1) {
                     if (print) {
@@ -176,5 +194,10 @@ public class App {
             return primes;
         }
 
+    }
+
+    public static int random(int min, int max) {
+
+        return (int) (Math.random() * ((max - min) + 1)) + min;
     }
 }
