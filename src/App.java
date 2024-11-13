@@ -3,83 +3,91 @@ import java.util.Arrays;
 import java.util.List;
 
 public class App {
-    private final static int[] factorBase = WriteToFile.readNumbersFromFile("primes.txt", 10);
+    private final static int[] factorBase = WriteToFile.readNumbersFromFile("primes.txt", 1024);
     private final static BigInteger[] FACTOR_BASE = new BigInteger[factorBase.length];
-    private final static String N_IN = "16637";
-    // private final static String N_IN = "392742364277";
-    // private final static String N_IN = "130314078057199508079913";
+    // private final static String N_IN = "92434447339770015548544881401"; // .4
+    private final static String N_IN = "149106521126845407396329"; // din uppgift
     private final static BigInteger N = new BigInteger(N_IN);
-    private final static int L = factorBase.length + 2;
-    private static int[] rs = new int[L];
+    private final static int L = factorBase.length + 10;
+    private static BigInteger[] rs = new BigInteger[L];
 
     public static void main(String[] args) throws Exception {
         // preparing factor base
         for (int i = 0; i < factorBase.length; i++) {
             FACTOR_BASE[i] = BigInteger.valueOf(factorBase[i]);
         }
-        boolean run = true;
-        while (run) {
-            // generating smooth numbers, P and M matrix, storing r values in rs
-            List<int[][]> PM = Pmatrix(true);
 
-            // printMatrix(PM.get(0));
-            // System.out.println("---------");
-            // printMatrix(PM.get(1));
+        // starting timing
+        long startTime = System.nanoTime();
 
-            int[][] P = PM.get(0);
+        System.out.println("Calculating r values...");
+        // generating smooth numbers, P and M matrix, storing r values in rs
+        List<int[][]> PM = Pmatrix(false);
 
-            WriteToFile.writeMatrix(PM.get(1));
+        // printMatrix(PM.get(0));
+        // System.out.println("---------");
+        // printMatrix(PM.get(1));
 
-            ProcessBuilder processBuilder = new ProcessBuilder("GaussBin.exe", "in.txt", "out.txt");
-            Process process = processBuilder.start();
+        int[][] P = PM.get(0);
 
-            // Wait for the process to finish
-            int exitCode = process.waitFor();
+        WriteToFile.writeMatrix(PM.get(1));
 
-            // for every solution multuply rows and try founding p and q
-            int[][] solutions = WriteToFile.getData();
+        System.out.println("Waiting for GaussBin.exe...");
+        ProcessBuilder processBuilder = new ProcessBuilder("GaussBin.exe", "in.txt", "out.txt");
+        Process process = processBuilder.start();
 
-            for (int s = 0; s < solutions.length; s++) {
-                BigInteger x = BigInteger.ONE;
-                BigInteger y = BigInteger.ONE;
-                int[] factors = new int[factorBase.length];
-                for (int i = 0; i < solutions[s].length; i++) {
-                    if (solutions[s][i] == 1) {
-                        // multiplying rows (x)
-                        x = x.multiply(BigInteger.valueOf((long) rs[i]));
+        // Wait for the process to finish
+        process.waitFor();
 
-                        // getting rows to multiply (y)
-                        for (int j = 0; j < factorBase.length; j++) {
-                            if (P[i][j] > 0) {
-                                factors[j] += P[i][j];
-                            }
+        // for every solution multuply rows and try founding p and q
+        int[][] solutions = WriteToFile.getData();
+
+        for (int s = 0; s < solutions.length; s++) {
+            BigInteger x = BigInteger.ONE;
+            BigInteger y = BigInteger.ONE;
+            int[] factors = new int[factorBase.length];
+            for (int i = 0; i < solutions[s].length; i++) {
+                if (solutions[s][i] == 1) {
+                    // multiplying rows (x)
+                    x = x.multiply(rs[i]);
+
+                    // getting rows to multiply (y)
+                    for (int j = 0; j < factorBase.length; j++) {
+                        if (P[i][j] > 0) {
+                            factors[j] += P[i][j];
                         }
-
                     }
 
-                }
-                // flyttar ut tvån genom att ta index minux 2 samtidigt multiplerar jag ihop y
-                for (int i = 0; i < factors.length; i++) {
-                    if (factors[i] > 0) {
-                        factors[i] /= 2;
-                        y = y.multiply(FACTOR_BASE[i].pow(factors[i])).mod(N);
-                    }
-                }
-
-                x = x.mod(N);
-                System.out.println("Trying solution: " + (s + 1));
-                System.out.println(x.toString() + " = " + y.toString());
-                BigInteger a = y.subtract(x);
-                BigInteger p = a.gcd(N);
-                Boolean notAnswer = p.equals(BigInteger.ONE) || p.equals(N);
-                if (!notAnswer) {
-                    System.out.println(p);
-                    System.out.println(N.divide(p));
-                    run = false;
-                    break;
                 }
 
             }
+            // flyttar ut tvån genom att ta index minux 2 samtidigt multiplerar jag ihop y
+            for (int i = 0; i < factors.length; i++) {
+                if (factors[i] > 0) {
+                    factors[i] /= 2;
+                    y = y.multiply(FACTOR_BASE[i].pow(factors[i])).mod(N);
+                }
+            }
+
+            x = x.mod(N);
+            System.out.println("Trying solution: " + (s + 1));
+            System.out.println(x.toString() + " = " + y.toString());
+            BigInteger a = y.subtract(x);
+            BigInteger p = a.gcd(N);
+            Boolean notAnswer = p.equals(BigInteger.ONE) || p.equals(N);
+            if (!notAnswer) {
+                long endTime = System.nanoTime();
+                long duration = (endTime - startTime);
+                System.out.println("----------------------------");
+                System.out.println("Found p and q:");
+                System.out.println("p: " + p);
+                System.out.println("q: " + N.divide(p));
+                System.out.println("(" + duration / 1000000 + " ms)");
+                System.out.println("----------------------------");
+
+                break;
+            }
+
         }
 
     }
@@ -101,10 +109,10 @@ public class App {
         for (int i = 1; i < L * 2; i++) {
             for (int j = 1; j < L * 2; j++) {
                 if (count == L) {
-                    System.out.println("Found Enough");
+                    System.out.println("Found Enough unique r values (" + L + " st)");
                     return Arrays.asList(P, M);
                 }
-                BigInteger r = likelySmooth(random(1, L), random(1, L));
+                BigInteger r = likelySmooth(i, j);
                 int[] primes = primeFactorsAndSmooth(r.pow(2).mod(N));
                 if (primes[0] != -1) {
                     if (print) {
@@ -120,7 +128,7 @@ public class App {
                     if (isUnique(M, Pmod2)) {
                         M[count] = Pmod2;
                         P[count] = primes;
-                        rs[count] = (int) r.longValueExact();
+                        rs[count] = r;
                         count++;
                     }
 

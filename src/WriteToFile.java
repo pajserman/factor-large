@@ -21,6 +21,7 @@ public class WriteToFile {
     }
 
     public static int[] readNumbersFromFile(String filePath, int numValues) {
+        System.out.println("Loading primies from primes.txt (" + numValues + "st)");
         ArrayList<Integer> numbersList = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
