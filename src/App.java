@@ -5,8 +5,8 @@ import java.util.List;
 public class App {
     private final static int[] factorBase = WriteToFile.readNumbersFromFile("primes.txt", 1024);
     private final static BigInteger[] FACTOR_BASE = new BigInteger[factorBase.length];
-    // private final static String N_IN = "92434447339770015548544881401"; // .4
-    private final static String N_IN = "149106521126845407396329"; // din uppgift
+    // private final static String N_IN = "92434447339770015548544881401"; // task 4
+    private final static String N_IN = "149106521126845407396329"; // ditt nummer
     private final static BigInteger N = new BigInteger(N_IN);
     private final static int L = factorBase.length + 10;
     private static BigInteger[] rs = new BigInteger[L];
@@ -202,10 +202,5 @@ public class App {
             return primes;
         }
 
-    }
-
-    public static int random(int min, int max) {
-
-        return (int) (Math.random() * ((max - min) + 1)) + min;
     }
 }

@@ -2,19 +2,18 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter; // Import the FileWriter class
-import java.io.IOException; // Import the IOException class to handle errors
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 public class WriteToFile {
 
     public static void main(String[] args) {
-        int[] a = readNumbersFromFile("primes.txt", 100);
+        int[] a = readNumbersFromFile("primes.txt", 1000);
         for (int i : a) {
             System.out.println(i);
         }
